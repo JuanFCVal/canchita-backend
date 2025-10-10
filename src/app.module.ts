@@ -1,8 +1,20 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { AuthModule } from './auth/auth.module';
+import { SupabaseModule } from './supabase/supabase.module';
+import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
+import {
+  UserProfile,
+  Group,
+  GroupMember,
+  IndividualCup,
+  Match,
+  MatchPlayer,
+} from './entities';
 
 @Module({
   imports: [
@@ -16,6 +28,14 @@ import { AppService } from './app.service';
         return {
           type: 'postgres',
           url: databaseUrl,
+          entities: [
+            UserProfile,
+            Group,
+            GroupMember,
+            IndividualCup,
+            Match,
+            MatchPlayer,
+          ],
           autoLoadEntities: true,
           synchronize: configService.get('NODE_ENV') === 'development',
           ssl: {
@@ -27,8 +47,16 @@ import { AppService } from './app.service';
       },
       inject: [ConfigService],
     }),
+    SupabaseModule,
+    AuthModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+  ],
 })
 export class AppModule {}
