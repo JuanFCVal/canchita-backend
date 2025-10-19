@@ -5,6 +5,7 @@ import { Group } from '../entities/group.entity';
 import { CreateGroupDto } from './dto/create-group.dto';
 import { UpdateGroupDto } from './dto/update-group.dto';
 import { GroupResponseDto } from './dto/group-response.dto';
+import { mapGroupToResponseDTO } from '../adapters/group.adapter';
 
 @Injectable()
 export class GroupService {
@@ -24,7 +25,7 @@ export class GroupService {
     });
 
     const savedGroup = await this.groupRepository.save(group);
-    return this.mapToResponseDto(savedGroup);
+    return mapGroupToResponseDTO(savedGroup);
   }
 
   async findAllByOwner(userProfileId: string): Promise<GroupResponseDto[]> {
@@ -38,10 +39,13 @@ export class GroupService {
       },
     });
 
-    return groups.map((group) => this.mapToResponseDto(group));
+    return groups.map((group) => mapGroupToResponseDTO(group));
   }
 
-  async findOne(id: string, userProfileId: string): Promise<GroupResponseDto> {
+  private async findGroupByIdAndOwner(
+    id: string,
+    userProfileId: string,
+  ): Promise<Group> {
     const group = await this.groupRepository.findOne({
       where: {
         id,
@@ -54,7 +58,12 @@ export class GroupService {
       throw new NotFoundException('Group not found');
     }
 
-    return this.mapToResponseDto(group);
+    return group;
+  }
+
+  async findOne(id: string, userProfileId: string): Promise<GroupResponseDto> {
+    const group = await this.findGroupByIdAndOwner(id, userProfileId);
+    return mapGroupToResponseDTO(group);
   }
 
   async update(
@@ -62,55 +71,26 @@ export class GroupService {
     updateGroupDto: UpdateGroupDto,
     userProfileId: string,
   ): Promise<GroupResponseDto> {
-    const group = await this.groupRepository.findOne({
-      where: {
-        id,
-        owner_profile_id: userProfileId,
-        is_active: true,
-      },
-    });
-
-    if (!group) {
-      throw new NotFoundException('Group not found');
-    }
+    const group = await this.findGroupByIdAndOwner(id, userProfileId);
 
     Object.assign(group, updateGroupDto);
 
     const updatedGroup = await this.groupRepository.save(group);
-    return this.mapToResponseDto(updatedGroup);
+    return mapGroupToResponseDTO(updatedGroup);
   }
 
   async remove(
     id: string,
     userProfileId: string,
   ): Promise<{ message: string; group_id: string }> {
-    const group = await this.groupRepository.findOne({
-      where: {
-        id,
-        owner_profile_id: userProfileId,
-        is_active: true,
-      },
-    });
+    const group = await this.findGroupByIdAndOwner(id, userProfileId);
 
-    if (!group) {
-      throw new NotFoundException('Group not found');
-    }
     group.is_active = false;
     await this.groupRepository.save(group);
 
     return {
       message: 'Group successfully deactivated',
       group_id: id,
-    };
-  }
-
-  private mapToResponseDto(group: Group): GroupResponseDto {
-    return {
-      id: group.id,
-      name: group.name,
-      description: group.description,
-      created_at: group.created_at,
-      updated_at: group.updated_at,
     };
   }
 }
