@@ -5,6 +5,7 @@ import { APP_GUARD } from '@nestjs/core';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
+import { GroupModule } from './group/group.module';
 import { SupabaseModule } from './supabase/supabase.module';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import {
@@ -49,6 +50,7 @@ import {
     }),
     SupabaseModule,
     AuthModule,
+    GroupModule,
   ],
   controllers: [AppController],
   providers: [

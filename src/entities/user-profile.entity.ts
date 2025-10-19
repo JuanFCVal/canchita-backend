@@ -13,8 +13,8 @@ import { GroupMember } from './group-member.entity';
 @Entity('user_profiles')
 @Unique(['email'])
 export class UserProfile {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ unique: true })
   email: string;

@@ -20,14 +20,14 @@ export enum WinnerTeam {
 
 @Entity('matches')
 export class Match {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column()
-  group_id: number;
+  @Column({ type: 'uuid' })
+  group_id: string;
 
-  @Column()
-  created_by_member_id: number;
+  @Column({ type: 'uuid' })
+  created_by_member_id: string;
 
   @Column({ type: 'date' })
   date: Date;

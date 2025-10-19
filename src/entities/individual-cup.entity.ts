@@ -26,11 +26,11 @@ export enum EliminationRound {
 
 @Entity('individual_cups')
 export class IndividualCup {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column()
-  group_member_id: number;
+  @Column({ type: 'uuid' })
+  group_member_id: string;
 
   @Column({
     type: 'enum',

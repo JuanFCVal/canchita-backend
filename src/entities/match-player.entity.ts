@@ -16,11 +16,11 @@ export enum Team {
 
 @Entity('match_players')
 export class MatchPlayer {
-  @PrimaryColumn()
-  match_id: number;
+  @PrimaryColumn({ type: 'uuid' })
+  match_id: string;
 
-  @PrimaryColumn()
-  member_id: number;
+  @PrimaryColumn({ type: 'uuid' })
+  member_id: string;
 
   @Column({
     type: 'enum',
