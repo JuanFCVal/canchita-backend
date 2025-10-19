@@ -14,19 +14,19 @@ import { Match } from './match.entity';
 
 @Entity('groups')
 export class Group {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @Column()
+  @Column({ type: 'text' })
   name: string;
 
-  @Column()
-  owner_profile_id: number;
+  @Column({ type: 'uuid' })
+  owner_profile_id: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ default: true })
+  @Column({ type: 'boolean', default: true })
   is_active: boolean;
 
   @CreateDateColumn()

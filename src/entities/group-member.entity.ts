@@ -17,8 +17,8 @@ import { MatchPlayer } from './match-player.entity';
 
 @Entity('group_members')
 export class GroupMember {
-  @PrimaryGeneratedColumn()
-  id: number;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column()
   name: string;
@@ -26,11 +26,11 @@ export class GroupMember {
   @Column({ nullable: true })
   email: string;
 
-  @Column({ nullable: true })
-  user_profile_id: number;
+  @Column({ type: 'uuid', nullable: true })
+  user_profile_id: string;
 
-  @Column()
-  group_id: number;
+  @Column({ type: 'uuid' })
+  group_id: string;
 
   @Column({ default: true })
   is_placeholder: boolean;
