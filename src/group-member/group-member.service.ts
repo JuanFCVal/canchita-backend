@@ -184,7 +184,7 @@ export class GroupMemberService {
     // Handle email linking logic
     if (updateGroupMemberDto.email !== undefined) {
       member.email = updateGroupMemberDto.email;
-      
+
       if (updateGroupMemberDto.email) {
         // If email is provided, find or create user profile and link it
         const linkedUserProfile = await this.findOrCreateUserByEmail(
