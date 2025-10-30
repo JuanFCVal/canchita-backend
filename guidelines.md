@@ -66,6 +66,15 @@ src/
 - Write self-explanatory code with clear naming conventions
 - Use TypeScript types and interfaces to clarify data structures
 
+### 6 Do not add logic in controllers
+
+- Controllers should be thin layers that delegate to services
+- Avoid handling response formatting or business logic in controllers
+
+### 7 Create modules when needed
+
+- Group related controllers and services into modules
+
 **Structure:**
 
 ```typescript

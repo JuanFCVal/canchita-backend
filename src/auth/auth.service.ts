@@ -25,7 +25,7 @@ export class AuthService {
     });
 
     if (existingUser && existingUser.is_verified) {
-      throw new BadRequestException('User already exists');
+      throw new BadRequestException('User already exists and is verified');
     }
 
     const displayName = name || email.split('@')[0];
@@ -50,13 +50,17 @@ export class AuthService {
 
     let userProfile = existingUser;
     if (!userProfile) {
+      // Create new profile
       userProfile = this.userProfileRepository.create({
         email,
         name: displayName,
         is_verified: false,
+        is_auto_created: false, // This is a manual signup
       });
     } else {
+      // Update existing auto-created profile
       userProfile.name = displayName;
+      userProfile.is_auto_created = false; // Now it's a real user signup
     }
 
     await this.userProfileRepository.save(userProfile);
@@ -89,12 +93,27 @@ export class AuthService {
   async signIn(signInDto: SignInDto): Promise<AuthResponseDto> {
     const { email, password } = signInDto;
 
+    // First, check if this is an auto-created user trying to login
+    const existingProfile = await this.userProfileRepository.findOne({
+      where: { email },
+    });
+
     const { data, error } = await this.supabase.auth.signInWithPassword({
       email,
       password,
     });
 
     if (error) {
+      // If login failed and user exists as auto-created, provide helpful message
+      if (
+        existingProfile &&
+        existingProfile.is_auto_created &&
+        !existingProfile.is_verified
+      ) {
+        throw new UnauthorizedException(
+          'This email was added to a group but no account exists yet. Please sign up first to create your account.',
+        );
+      }
       throw new UnauthorizedException(error.message);
     }
 
@@ -102,19 +121,24 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    let userProfile = await this.userProfileRepository.findOne({
-      where: { email },
-    });
-
+    let userProfile = existingProfile;
     if (!userProfile) {
+      // Create profile for existing Supabase user
       userProfile = this.userProfileRepository.create({
         email,
         name: data.user.user_metadata?.name || email.split('@')[0],
         is_verified: true,
+        is_auto_created: false,
       });
       await this.userProfileRepository.save(userProfile);
-    } else if (!userProfile.is_verified) {
-      userProfile.is_verified = true;
+    } else {
+      // Update existing profile on successful login
+      if (!userProfile.is_verified) {
+        userProfile.is_verified = true;
+      }
+      if (userProfile.is_auto_created) {
+        userProfile.is_auto_created = false; // Now it's a real verified user
+      }
       await this.userProfileRepository.save(userProfile);
     }
 
