@@ -37,6 +37,12 @@ export class UserProfile {
   @Column({ nullable: true })
   reset_password_token: string;
 
+  @Column({ default: false })
+  is_auto_created: boolean;
+
+  @Column({ nullable: true })
+  auto_created_at: Date;
+
   @CreateDateColumn()
   created_at: Date;
 

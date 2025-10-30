@@ -7,6 +7,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GroupMember } from '../entities/group-member.entity';
 import { Group } from '../entities/group.entity';
+import { UserProfile } from '../entities/user-profile.entity';
 import { CreateGroupMemberDto } from './dto/create-group-member.dto';
 import { UpdateGroupMemberDto } from './dto/update-group-member.dto';
 import { GroupMemberResponseDto } from './dto/group-member-response.dto';
@@ -19,6 +20,8 @@ export class GroupMemberService {
     private readonly groupMemberRepository: Repository<GroupMember>,
     @InjectRepository(Group)
     private readonly groupRepository: Repository<Group>,
+    @InjectRepository(UserProfile)
+    private readonly userProfileRepository: Repository<UserProfile>,
   ) {}
 
   private async validateGroupAccess(
@@ -72,6 +75,27 @@ export class GroupMemberService {
     return member;
   }
 
+  private async findOrCreateUserByEmail(email: string): Promise<UserProfile> {
+    let userProfile = await this.userProfileRepository.findOne({
+      where: { email },
+    });
+
+    if (!userProfile) {
+      // Create auto-generated user profile
+      userProfile = this.userProfileRepository.create({
+        email,
+        name: email.split('@')[0], // Use email prefix as default name
+        is_verified: false,
+        is_auto_created: true,
+        auto_created_at: new Date(),
+      });
+
+      userProfile = await this.userProfileRepository.save(userProfile);
+    }
+
+    return userProfile;
+  }
+
   async addMember(
     groupId: string,
     createGroupMemberDto: CreateGroupMemberDto,
@@ -79,11 +103,23 @@ export class GroupMemberService {
   ): Promise<GroupMemberResponseDto> {
     await this.validateGroupAccess(groupId, userProfileId);
 
+    let linkedUserProfile: UserProfile | null = null;
+    let isPlaceholder = true;
+
+    // If email is provided, try to link to existing or create new user profile
+    if (createGroupMemberDto.email) {
+      linkedUserProfile = await this.findOrCreateUserByEmail(
+        createGroupMemberDto.email,
+      );
+      isPlaceholder = false;
+    }
+
     const groupMember = this.groupMemberRepository.create({
       name: createGroupMemberDto.name,
       email: createGroupMemberDto.email,
       group_id: groupId,
-      is_placeholder: true,
+      user_profile_id: linkedUserProfile?.id || null,
+      is_placeholder: isPlaceholder,
       is_active: true,
     });
 
@@ -145,10 +181,25 @@ export class GroupMemberService {
       member.name = updateGroupMemberDto.name;
     }
 
+    // Handle email linking logic
     if (updateGroupMemberDto.email !== undefined) {
       member.email = updateGroupMemberDto.email;
+      
+      if (updateGroupMemberDto.email) {
+        // If email is provided, find or create user profile and link it
+        const linkedUserProfile = await this.findOrCreateUserByEmail(
+          updateGroupMemberDto.email,
+        );
+        member.user_profile_id = linkedUserProfile.id;
+        member.is_placeholder = false;
+      } else {
+        // If email is cleared, unlink user profile
+        member.user_profile_id = null;
+        member.is_placeholder = true;
+      }
     }
 
+    // Handle manual user_profile_id assignment (for existing users)
     if (updateGroupMemberDto.user_profile_id) {
       member.user_profile_id = updateGroupMemberDto.user_profile_id;
       member.is_placeholder = false;
